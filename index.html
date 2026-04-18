@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>L3 B_UG - Sector Breach</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+        }
+    }
+    </script>
+</head>
+
+<body>
+
+    <!-- BOOT -->
+    <div id="boot-screen">
+        <div id="boot-title">▣ L3 B_UG :: BOOT v2.1</div>
+        <div id="boot-lines"></div>
+        <div id="boot-progress-wrap">
+            <div class="boot-prog-label">
+                <span>SYSTEM_INIT</span>
+                <span id="boot-pct">0%</span>
+            </div>
+            <div id="boot-progress-bar"></div>
+        </div>
+        <div id="boot-prompt">[ PRESS ANY KEY TO BREACH ]</div>
+    </div>
+
+    <!-- OVERLAYS -->
+    <div id="crt-overlay"></div>
+    <div id="glitch-slice"></div>
+    <div id="hex-stream"></div>
+
+    <!-- NOTIF -->
+    <div id="sector-notif">
+        <span id="notif-title"></span>
+        <span class="sub" id="notif-sub"></span>
+    </div>
+
+    <!-- HUD -->
+    <div id="ui-layer">
+        <div class="status-panel" id="main-panel">
+            <div class="panel-header">▣ SYS::MONITOR</div>
+
+            <div class="stat-line">
+                <span class="lbl">LOC</span>
+                <span class="val" id="sector-txt">SECTOR_0x01</span>
+            </div>
+
+            <div id="bar-wrap">
+                <div class="stat-line">
+                    <span class="lbl">INFECTION</span>
+                    <span class="val" id="bit-count">0</span>
+                </div>
+                <div id="bar-container"><div id="bar-fill"></div></div>
+                <div id="bar-pct">0%</div>
+            </div>
+
+            <div id="speed-wrap">
+                <div class="stat-line">
+                    <span class="lbl">VITESSE</span>
+                    <span class="val" id="speed-val">0.3x</span>
+                </div>
+                <div id="speed-bar-container"><div id="speed-bar-fill"></div></div>
+            </div>
+        </div>
+    </div>
+    <!-- LÉGENDE CONTRÔLES -->
+    <div id="controls-bar">
+        <span><b>[← →]</b> CHANGER LANE</span>
+        <span><b>[ESPACE]</b> INVERSER</span>
+        <span><b>CYAN</b> = COLLECTER</span>
+        <span><b>ROUGE</b> = ÉVITER</span>
+        <span><b>[M]</b> MUTE</span>
+    </div>
+    <button id="mute-btn">♪ ON</button>
+
+    <!-- JS -->
+    <script type="module" src="js/main.js"></script>
+
+</body>
+</html>

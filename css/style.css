@@ -1,0 +1,274 @@
+ :root { --neon: #00ff00; --bg: #000; }
+ * { box-sizing: border-box; }
+
+ body {
+     margin: 0; overflow: hidden;
+     background: var(--bg);
+     font-family: 'Share Tech Mono', 'Courier New', monospace;
+     color: var(--neon);
+ }
+
+ /* ─── CRT OVERLAY ─── */
+ #crt-overlay {
+     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+     pointer-events: none; z-index: 5;
+     background:
+  linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.12) 50%),
+  repeating-linear-gradient(90deg, rgba(255,0,0,0.03), rgba(0,255,0,0.01), rgba(0,0,255,0.03));
+     background-size: 100% 3px, 3px 100%;
+ }
+ /* Balayage scanline animé */
+ #crt-overlay::after {
+     content: '';
+     position: absolute; top: -100%; left: 0; width: 100%; height: 30%;
+     background: linear-gradient(to bottom, transparent, rgba(0,255,0,0.03), transparent);
+     animation: scanline-sweep 6s linear infinite;
+ }
+ @keyframes scanline-sweep { to { top: 150%; } }
+
+ /* ─── HEX STREAM ─── */
+ #hex-stream {
+     position: fixed; top: 0; right: 12px; width: 130px; height: 100%;
+     font-size: 9px; color: rgba(0,255,0,0.12);
+     overflow: hidden; text-align: right; pointer-events: none;
+     z-index: 6; letter-spacing: 1px;
+ }
+
+ /* ─── UI LAYER ─── */
+ #ui-layer {
+     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+     pointer-events: none; z-index: 10;
+ }
+
+ /* ─── HUD PANEL ─── */
+ .status-panel {
+     position: absolute; top: 20px; left: 20px;
+     min-width: 240px; padding: 14px 18px;
+     background: rgba(0, 8, 0, 0.75);
+     backdrop-filter: blur(4px);
+     border: 1px solid var(--neon);
+     box-shadow: 0 0 12px rgba(0,255,0,0.2), inset 0 0 20px rgba(0,255,0,0.03);
+     animation: border-pulse 2.5s ease-in-out infinite;
+ }
+ @keyframes border-pulse {
+     0%, 100% { box-shadow: 0 0 8px rgba(0,255,0,0.2), inset 0 0 20px rgba(0,255,0,0.03); }
+     50% { box-shadow: 0 0 20px rgba(0,255,0,0.5), inset 0 0 30px rgba(0,255,0,0.07); }
+ }
+
+ /* En-tête du panel */
+ .panel-header {
+     font-size: 11px; letter-spacing: 2px;
+     color: var(--neon); opacity: 0.6;
+     border-bottom: 1px solid rgba(0,255,0,0.15);
+     padding-bottom: 6px; margin-bottom: 10px;
+ }
+
+ /* Lignes de stat */
+ .stat-line {
+     font-size: 12px; margin: 6px 0;
+     display: flex; align-items: center; gap: 6px;
+ }
+ .stat-line .lbl { opacity: 0.5; font-size: 10px; letter-spacing: 1px; }
+ .stat-line .val { color: var(--neon); }
+
+ /* Barre d'infection redesignée */
+ #bar-wrap { margin-top: 10px; }
+ #bar-container {
+     width: 100%; height: 14px;
+     border: 1px solid rgba(0,255,0,0.3);
+     background: rgba(0,255,0,0.04);
+     position: relative; overflow: hidden;
+ }
+ #bar-fill {
+     height: 100%; width: 0%;
+     background: repeating-linear-gradient(90deg, var(--neon) 0px, var(--neon) 6px, transparent 6px, transparent 9px);
+     box-shadow: 0 0 10px var(--neon);
+     transition: width 0.25s ease;
+ }
+ #bar-pct {
+     font-size: 10px; text-align: right;
+     margin-top: 3px; opacity: 0.7; letter-spacing: 1px;
+ }
+
+ /* Barre de vitesse */
+ #speed-wrap { margin-top: 12px; }
+ #speed-bar-container {
+     width: 100%; height: 8px;
+     border: 1px solid rgba(0,255,0,0.2);
+     background: rgba(0,255,0,0.03);
+ }
+ #speed-bar-fill {
+     height: 100%; width: 0%;
+     background: var(--neon);
+     opacity: 0.6;
+     transition: width 0.5s ease;
+ }
+
+ /* ─── LÉGENDE CONTRÔLES ─── */
+ #controls-bar {
+     position: fixed; bottom: 0; left: 0; width: 100%;
+     padding: 7px 20px;
+     background: rgba(0,5,0,0.7);
+     border-top: 1px solid rgba(0,255,0,0.12);
+     font-size: 10px; letter-spacing: 1.5px;
+     color: rgba(0,255,0,0.4);
+     z-index: 11; pointer-events: none;
+     display: flex; gap: 30px; justify-content: center;
+ }
+ #controls-bar span { opacity: 0.6; }
+ #controls-bar b { color: rgba(0,255,0,0.8); }
+
+ /* ─── NOTIFICATION SECTEUR ─── */
+ #sector-notif {
+     position: fixed; top: 38%; left: 50%;
+     transform: translate(-50%, -50%) scale(0.6);
+     font-size: 30px; display: none;
+     color: #fff;
+     text-shadow: 0 0 30px var(--neon), 0 0 60px var(--neon);
+     font-weight: bold; z-index: 25;
+     letter-spacing: 4px; text-align: center;
+     opacity: 0;
+     transition: transform 0.25s ease, opacity 0.25s ease;
+ }
+ #sector-notif.show {
+     transform: translate(-50%, -50%) scale(1);
+     opacity: 1;
+ }
+ #sector-notif .sub {
+     display: block; font-size: 13px;
+     letter-spacing: 6px; margin-top: 6px;
+     opacity: 0.6;
+ }
+
+ /* ─── GLITCH UI PANEL ─── */
+ .glitch-active { animation: glitch-anim 0.2s steps(2) infinite; }
+ @keyframes glitch-anim {
+     0%   { transform: translateX(0); }
+     50%  { transform: translateX(8px); filter: hue-rotate(90deg); }
+     100% { transform: translateX(-8px); }
+ }
+
+ /* ─── GLITCH PLEIN ÉCRAN ─── */
+ body.screen-corrupted { animation: body-glitch 0.18s steps(3) infinite; }
+ @keyframes body-glitch {
+     0%   { transform: translate(0,0) skewX(0deg); filter: none; }
+     20%  { transform: translate(-6px, 2px) skewX(-1.5deg); filter: hue-rotate(90deg) brightness(1.4) saturate(2); }
+     40%  { transform: translate(6px, -2px) skewX(1deg); filter: hue-rotate(220deg) contrast(1.3); }
+     60%  { transform: translate(-3px, 0px) skewX(0.5deg); filter: hue-rotate(310deg); }
+     80%  { transform: translate(3px, 1px) skewX(-0.5deg); filter: brightness(0.7); }
+     100% { transform: translate(0,0) skewX(0deg); filter: none; }
+ }
+ #glitch-slice {
+     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+     pointer-events: none; z-index: 50; display: none; overflow: hidden;
+ }
+ #glitch-slice.active { display: block; }
+ #glitch-slice .slice {
+     position: absolute; left: 0; width: 100%;
+     mix-blend-mode: screen;
+     animation: slice-drift 0.15s steps(2) infinite;
+ }
+ @keyframes slice-drift {
+     0%   { transform: translateX(0); opacity: 0.5; }
+     33%  { transform: translateX(-12px); opacity: 0.7; }
+     66%  { transform: translateX(12px); opacity: 0.4; }
+     100% { transform: translateX(0); opacity: 0.6; }
+ }
+
+ /* ─── ÉCRAN DE BOOT ─── */
+ #boot-screen {
+     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+     background: #000; z-index: 100;
+     display: flex; flex-direction: column;
+     align-items: center; justify-content: center;
+     font-size: 13px; letter-spacing: 2px; color: #00ff00;
+     transition: opacity 0.6s ease;
+     animation: boot-ambient-flicker 7s steps(1) infinite;
+ }
+ /* Flicker TRÈS subtil et rare — ne casse pas l'ambiance */
+ @keyframes boot-ambient-flicker {
+     0%, 91%  { filter: none; }
+     92%      { filter: brightness(1.3) saturate(1.5); }
+     93%      { filter: none; }
+     96%      { filter: brightness(0.85); }
+     97%      { filter: none; }
+     100%     { filter: none; }
+ }
+ #boot-screen.fade-out { opacity: 0; pointer-events: none; }
+
+ /* Titre avec aberration chromatique */
+ #boot-title {
+     font-size: 15px; letter-spacing: 4px; margin-bottom: 20px;
+     text-shadow: -2px 0 rgba(255,0,100,0.45), 2px 0 rgba(0,220,255,0.45);
+     animation: title-aberration 5s steps(1) infinite;
+ }
+ @keyframes title-aberration {
+     0%, 88%  { text-shadow: -2px 0 rgba(255,0,100,0.4), 2px 0 rgba(0,220,255,0.4); }
+     89%      { text-shadow: -6px 0 rgba(255,0,100,0.9), 6px 0 rgba(0,220,255,0.9); letter-spacing: 6px; }
+     90%      { text-shadow: -2px 0 rgba(255,0,100,0.4), 2px 0 rgba(0,220,255,0.4); letter-spacing: 4px; }
+     93%      { text-shadow: 4px 0 rgba(255,0,100,0.7), -4px 0 rgba(0,220,255,0.7); }
+     94%      { text-shadow: -2px 0 rgba(255,0,100,0.4), 2px 0 rgba(0,220,255,0.4); }
+     100%     { text-shadow: -2px 0 rgba(255,0,100,0.4), 2px 0 rgba(0,220,255,0.4); }
+ }
+
+ #boot-lines { text-align: left; width: 480px; max-width: 90vw; }
+ #boot-lines .line {
+     opacity: 0; margin: 3px 0;
+     animation: line-appear 0.01s forwards;
+ }
+ @keyframes line-appear { to { opacity: 1; } }
+ #boot-lines .ok     { color: #00ff88; }
+ #boot-lines .err    { color: #ff4444; }
+ #boot-lines .warn   { color: #ffaa00; }
+ #boot-lines .dim    { opacity: 0.35; }
+ /* Ligne corrompue : tremble brièvement, puis se stabilise */
+ #boot-lines .corrupt {
+     color: #ff3333;
+     animation: line-appear 0.01s forwards, corrupt-shake 0.4s steps(3) 2;
+ }
+ @keyframes corrupt-shake {
+     0%   { transform: translateX(0); filter: none; }
+     25%  { transform: translateX(-4px); filter: hue-rotate(120deg); }
+     50%  { transform: translateX(4px); filter: hue-rotate(240deg); }
+     75%  { transform: translateX(-2px); filter: none; }
+     100% { transform: translateX(0); }
+ }
+
+ /* Barre de progression du boot */
+ #boot-progress-wrap {
+     width: 480px; max-width: 90vw; margin-top: 16px;
+ }
+ 
+ .boot-prog-label {
+     display: flex; justify-content: space-between;
+     font-size: 9px; letter-spacing: 2px; opacity: 0.45; margin-bottom: 5px;
+ }
+ #boot-progress-bar {
+     width: 0%; height: 2px;
+     background: #00ff00; box-shadow: 0 0 8px #00ff00;
+     transition: width 0.18s ease;
+ }
+
+ #boot-prompt {
+     margin-top: 22px; font-size: 14px; letter-spacing: 4px;
+     animation: blink-cursor 0.8s steps(1) infinite;
+     opacity: 0; transition: opacity 0.4s ease;
+ }
+ #boot-prompt.visible { opacity: 1; }
+ @keyframes blink-cursor { 50% { opacity: 0; } }
+
+ /* ─── BOUTON MUTE ─── */
+ #mute-btn {
+     position: fixed; bottom: 42px; right: 20px;
+     background: rgba(0,8,0,0.82);
+     border: 1px solid rgba(0,255,0,0.3);
+     color: rgba(0,255,0,0.65);
+     font-family: 'Share Tech Mono', 'Courier New', monospace;
+     font-size: 9px; letter-spacing: 2px;
+     padding: 5px 11px; cursor: pointer;
+     z-index: 13; pointer-events: all;
+     transition: all 0.2s ease;
+     outline: none;
+ }
+#mute-btn:hover { border-color: var(--neon); color: var(--neon); box-shadow: 0 0 8px rgba(0,255,0,0.3); }
+#mute-btn.muted { opacity: 0.35; text-decoration: line-through; }

@@ -1,0 +1,24 @@
+# Dépendances (si tu utilises npm plus tard)
+node_modules/
+dist/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Fichiers de configuration IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environnement
+.env
