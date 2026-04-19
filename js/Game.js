@@ -25,5 +25,6 @@ export class GameState {
         this.collectibles = [];
         this.gates = [];
         this.forks = [];
+        this.highScore = localStorage.getItem('lebug_highscore') || 0;
     }
 }
