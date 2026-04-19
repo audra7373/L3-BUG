@@ -272,3 +272,20 @@
  }
 #mute-btn:hover { border-color: var(--neon); color: var(--neon); box-shadow: 0 0 8px rgba(0,255,0,0.3); }
 #mute-btn.muted { opacity: 0.35; text-decoration: line-through; }
+
+.tutorial-layer {
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--neon);
+    font-family: 'Courier New', monospace;
+    font-size: 1.2rem;
+    text-align: center;
+    pointer-events: none; /* Ne bloque pas le clic sur le jeu */
+    z-index: 100;
+    text-shadow: 0 0 10px var(--neon);
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+.tutorial-layer.show { opacity: 1; }
