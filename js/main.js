@@ -11,6 +11,11 @@ const state = new GameState();
 let scene, camera, renderer, player, player2, tunnel, ambientLight;
 let lastGlitchLevel = -1;
 
+// Variables pour le Touch Drag fluide
+let isDragging = false;
+let touchStartX = 0;
+let initialLane = 0;
+
 // ============================================================
 // INITIALISATION DE LA SCÈNE
 // ============================================================
@@ -40,12 +45,45 @@ function init() {
     player2.visible = false;
     scene.add(player2);
 
-    // Contrôles
+    // --- CONTRÔLES CLAVIER ---
     window.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowLeft' && state.targetLane > 0) state.targetLane--;
         if (e.key === 'ArrowRight' && state.targetLane < 2) state.targetLane++;
         if (e.code === 'Space') { state.isFlipped = !state.isFlipped; audioEngine.playFlip(); }
         if (e.key === 'm' || e.key === 'M') toggleMuteUI();
+    });
+
+    // --- CONTRÔLES TACTILES (MOBILE FLUIDE) ---
+    const el = renderer.domElement;
+    el.addEventListener('touchstart', (e) => {
+        isDragging = true;
+        touchStartX = e.touches[0].clientX;
+        initialLane = state.targetLane;
+        if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+
+    el.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        const currentX = e.touches[0].clientX;
+        const diffX = currentX - touchStartX;
+        const sensitivity = 50; 
+        const laneOffset = Math.round(diffX / sensitivity);
+        state.targetLane = Math.max(0, Math.min(2, initialLane + laneOffset));
+        if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+
+    el.addEventListener('touchend', () => { isDragging = false; });
+
+    let lastTap = 0;
+    el.addEventListener('touchend', (e) => {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 300 && tapLength > 0) {
+            state.isFlipped = !state.isFlipped;
+            audioEngine.playFlip();
+            if (e.cancelable) e.preventDefault();
+        }
+        lastTap = currentTime;
     });
 
     document.getElementById('mute-btn').addEventListener('click', toggleMuteUI);
@@ -72,7 +110,6 @@ function animate() {
     if (state.speed < state.MAX_SPEED) state.speed += 0.0008;
     player.position.z -= state.speed;
 
-    // UI Vitesse
     const speedPct = Math.min(state.speed / state.MAX_SPEED, 1);
     document.getElementById('speed-bar-fill').style.width = (speedPct * 100) + '%';
     document.getElementById('speed-val').innerText = state.speed.toFixed(2) + 'x';
@@ -82,7 +119,6 @@ function animate() {
     let infectionLevel = (state.bits % 50) / 50;
     audioEngine.update(infectionLevel);
 
-    // Effets visuels adaptatifs
     ambientLight.intensity = 1.5 * (1 - infectionLevel * 0.6);
     scene.fog.density = 0.015 + (infectionLevel * 0.04);
     
@@ -99,7 +135,6 @@ function animate() {
 
     if (state.bits >= 50) jumpSector();
 
-    // Mouvements joueur
     player.position.x = THREE.MathUtils.lerp(player.position.x, state.lanes[state.targetLane], 0.2);
     player.position.y = THREE.MathUtils.lerp(player.position.y, state.isFlipped ? 4 : -4, 0.1);
     player.rotation.z += 0.05;
@@ -109,7 +144,6 @@ function animate() {
         player2.position.set(state.lanes[(state.targetLane + 1) % 3], player.position.y, player.position.z);
     } else { player2.visible = false; }
 
-    // Caméra
     camera.position.x = THREE.MathUtils.lerp(camera.position.x, player.position.x * 0.5, 0.12);
     camera.position.z = player.position.z + 8;
     camera.position.y = THREE.MathUtils.lerp(camera.position.y, player.position.y + 2, 0.1);
@@ -121,7 +155,7 @@ function animate() {
 }
 
 // ============================================================
-// LOGIQUE DE JEU (COLISIONS & SPAWN)
+// LOGIQUE DE JEU (COLLISIONS & SPAWN)
 // ============================================================
 function spawnLoop() {
     if (!state.gameActive) return;
@@ -156,22 +190,22 @@ function spawnGate(z) {
 
 function checkCollisions() {
     state.obstacles.forEach((o, i) => {
+        // Joueur 1
         if (player.position.distanceTo(o.position) < 1.6) {
             if (!state.isOverclocked) endGame("KERNEL_PANIC");
             else { audioEngine.playDeflect(); scene.remove(o); state.obstacles.splice(i, 1); }
         }
-
-        if(state.isForked && player2.position.distanceTo(o.position) < 1.6) {
+        // Joueur 2 (Fork)
+        if (state.isForked && player2.position.distanceTo(o.position) < 1.6) {
             terminateFork();
-            audioEngine.playDeflect(); // Ou un son de "glitch"
+            audioEngine.playDeflect();
             scene.remove(o);
             state.obstacles.splice(i, 1);
         }
-        
     });
 
     state.collectibles.forEach((c, i) => {
-        if (player.position.distanceTo(c.position) < 1.2) {
+        if (player.position.distanceTo(c.position) < 1.2 || (state.isForked && player2.position.distanceTo(c.position) < 1.2)) {
             state.bits++;
             audioEngine.playCollect();
             updateStatsUI();
@@ -180,11 +214,10 @@ function checkCollisions() {
         }
     });
 
-    // 3. COLLISION AVEC LES FORKS (Magenta / Bonus Dédoublement)
     state.forks.forEach((f, i) => {
         if (player.position.distanceTo(f.position) < 1.2) {
-            activateFork(); // Active le second joueur
-            audioEngine.playCollect(); // Ou un son spécifique si tu en as un
+            activateFork();
+            audioEngine.playCollect();
             scene.remove(f);
             state.forks.splice(i, 1);
         }
@@ -192,35 +225,24 @@ function checkCollisions() {
 
     state.gates.forEach((g, i) => {
         if (Math.abs(player.position.z - g.position.z) < 1.0 && state.targetLane === g.userData.lane) {
-            if (g.userData.type === "NOT") state.isFlipped = !state.isFlipped;
-            else if (state.bits < 5) endGame("AND_GATE_BLOCK");
+            if (g.userData.type === "NOT") { state.isFlipped = !state.isFlipped; audioEngine.playFlip(); }
+            else if (g.userData.type === "AND" && state.bits < 5) endGame("AND_GATE_BLOCK");
             scene.remove(g); state.gates.splice(i, 1);
         }
     });
+}
 
-    function activateFork() {
-        state.isForked = true;
-        player2.visible = true;
-        
-        // Optionnel : Ajouter un effet visuel ou sonore spécifique
-        console.log("SYSTEM_MSG: Process forked. Redundancy active.");
+function activateFork() {
+    if (state.isForked) clearTimeout(state.forkTimeout);
+    state.isForked = true;
+    player2.visible = true;
+    state.forkTimeout = setTimeout(() => { terminateFork(); }, 7000);
+}
 
-        // Le bonus s'arrête après 5 secondes (ajustable)
-        clearTimeout(state.forkTimeout); // Annule le timeout précédent si on reprend un fork
-        state.forkTimeout = setTimeout(() => {
-            state.isForked = false;
-            player2.visible = false;
-            console.log("SYSTEM_MSG: Child process terminated.");
-        }, 5000);
-    }
-
-    function terminateFork() {
-        state.isForked = false;
-        player2.visible = false;
-        if (state.forkTimeout) clearTimeout(state.forkTimeout);
-        console.log("SYSTEM_MSG: Child process terminated.");
-    }
-    
+function terminateFork() {
+    state.isForked = false;
+    player2.visible = false;
+    if (state.forkTimeout) clearTimeout(state.forkTimeout);
 }
 
 function updateStatsUI() {
@@ -232,10 +254,8 @@ function updateStatsUI() {
 function jumpSector() {
     state.bits = 0; state.sector++;
     audioEngine.playSectorJump();
-    
     const p = sectorPalettes[state.sector % sectorPalettes.length];
     updateSectorUI(p);
-
     tunnel.material.color.setHex(p.tunnel);
     ambientLight.color.setHex(p.light);
     scene.fog.color.setHex(p.fog);
@@ -246,10 +266,8 @@ function updateSectorUI(p) {
     const notif = document.getElementById('sector-notif');
     document.getElementById('notif-title').innerText = '>> SECTOR_0x0' + state.sector + ' UNLOCKED <<';
     notif.style.display = 'block';
-    
     const cssColor = '#' + p.light.toString(16).padStart(6, '0');
     document.documentElement.style.setProperty('--neon', cssColor);
-    
     requestAnimationFrame(() => notif.classList.add('show'));
     setTimeout(() => {
         notif.classList.remove('show');
@@ -332,5 +350,27 @@ function closeBoot() {
     setTimeout(() => { bs.style.display = 'none'; init(); }, 650);
 }
 
-window.addEventListener('keydown', closeBoot, { once: true });
+// ============================================================
+// GESTION DU LANCEMENT HYBRIDE (PC & MOBILE)
+// ============================================================
+
+// Variable de contrôle pour éviter les lancements multiples
+let gameStarted = false;
+
+function handleStart(e) {
+    if (bootDone && !gameStarted) {
+        gameStarted = true; // Verrouille le lancement
+        
+        // Nettoyage immédiat des écouteurs
+        window.removeEventListener('keydown', handleStart);
+        window.removeEventListener('touchstart', handleStart);
+        
+        closeBoot();
+    }
+}
+
+// On écoute sur window pour capturer l'entrée utilisateur n'importe où
+window.addEventListener('keydown', handleStart);
+window.addEventListener('touchstart', handleStart, { passive: false });
+
 runBoot();
