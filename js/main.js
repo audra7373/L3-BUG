@@ -104,6 +104,7 @@ function init() {
     }, 12000);
 
     document.getElementById('mute-btn').addEventListener('click', toggleMuteUI);
+    document.getElementById('high-score').innerText = state.highScore;
 
     animate();
     spawnLoop();
@@ -264,6 +265,15 @@ function terminateFork() {
 
 function updateStatsUI() {
     document.getElementById('bit-count').innerText = state.bits;
+
+    // Si le score actuel dépasse le record, on met à jour l'affichage en temps réel
+    if (state.bits > state.highScore) {
+        state.highScore = state.bits;
+        document.getElementById('high-score').innerText = state.highScore;
+        // Optionnel : ajouter une petite classe CSS pour faire briller le score
+        document.getElementById('high-score').classList.add('new-record');
+    }
+
     document.getElementById('bar-fill').style.width = (state.bits * 2) + '%';
     document.getElementById('bar-pct').innerText = (state.bits * 2) + '%';
 }
@@ -307,12 +317,18 @@ function applyScreenGlitch(level) {
 function endGame(m) {
     state.gameActive = false;
     audioEngine.playGameOver();
+
+    // Sauvegarde définitive du record
+    localStorage.setItem('lebug_highscore', state.highScore);
+
     document.getElementById('notif-title').innerText = '>> ' + m;
-    document.getElementById('notif-sub').innerText = 'SYSTEM REBOOT IN 2s...';
+    document.getElementById('notif-sub').innerText = 'FINAL_SCORE: ' + state.bits + ' | REBOOTING...';
+    //document.getElementById('notif-sub').innerText = 'SYSTEM REBOOT IN 2s...';
+
     const notif = document.getElementById('sector-notif');
     notif.style.display = 'block';
     notif.classList.add('show');
-    setTimeout(() => location.reload(), 2200);
+    setTimeout(() => location.reload(), 2500);
 }
 
 // ============================================================
