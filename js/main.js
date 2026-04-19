@@ -86,6 +86,23 @@ function init() {
         lastTap = currentTime;
     });
 
+    // Affiche le premier conseil 2 secondes après le début
+    setTimeout(() => showTutorial('move'), 2000);
+
+    // Affiche le conseil sur les bits 7 secondes après
+    setTimeout(() => showTutorial('goal'), 7000);
+
+    // CONSEIL FLIP : On l'affiche à 12s si le joueur n'a pas encore changé de gravité
+    let hasFlippedOnce = false;
+    const checkFlip = setInterval(() => {
+        if (state.isFlipped) hasFlippedOnce = true;
+    }, 100);
+
+    setTimeout(() => {
+        if (!hasFlippedOnce) showTutorial('flip');
+        clearInterval(checkFlip);
+    }, 12000);
+
     document.getElementById('mute-btn').addEventListener('click', toggleMuteUI);
 
     animate();
@@ -252,7 +269,9 @@ function updateStatsUI() {
 }
 
 function jumpSector() {
-    state.bits = 0; state.sector++;
+    localStorage.setItem('tutorial_completed', 'true');
+    state.bits = 0; 
+    state.sector++;
     audioEngine.playSectorJump();
     const p = sectorPalettes[state.sector % sectorPalettes.length];
     updateSectorUI(p);
@@ -348,6 +367,33 @@ function closeBoot() {
     const bs = document.getElementById('boot-screen');
     bs.classList.add('fade-out');
     setTimeout(() => { bs.style.display = 'none'; init(); }, 650);
+}
+
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+function showTutorial(action) {
+    // Vérifie si l'utilisateur a déjà fini le tuto dans le passé
+    if (localStorage.getItem('tutorial_completed') === 'true') return;
+
+    const tutLayer = document.getElementById('game-tutorial');
+    let message = "";
+
+    const controls = {
+        move: isMobile ? "DRAG TO MOVE" : "USE ARROWS TO MOVE",
+        flip: isMobile ? "DOUBLE TAP TO FLIP" : "PRESS SPACE TO FLIP",
+        goal: "COLLECT 50 BITS TO JUMP SECTOR"
+    };
+
+    message = controls[action] || "";
+    
+    if(message) {
+        tutLayer.innerText = `>> ${message} <<`;
+        tutLayer.classList.add('show');
+        
+        setTimeout(() => {
+            tutLayer.classList.remove('show');
+        }, 3500);
+    }
 }
 
 // ============================================================
