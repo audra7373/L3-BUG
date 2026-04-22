@@ -21,7 +21,7 @@ let initialLane = 0;
 // ============================================================
 function init() {
     scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x000500, 0.02);
+    scene.fog = new THREE.FogExp2(0x0f172a, 0.02);
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -125,7 +125,7 @@ function animate() {
     if (!state.gameActive) return;
     requestAnimationFrame(animate);
 
-    if (state.speed < state.MAX_SPEED) state.speed += 0.0008;
+    if (state.speed < state.MAX_SPEED) state.speed += 0.0005;
     player.position.z -= state.speed;
 
     const speedPct = Math.min(state.speed / state.MAX_SPEED, 1);
@@ -140,9 +140,9 @@ function animate() {
     ambientLight.intensity = 1.5 * (1 - infectionLevel * 0.6);
     scene.fog.density = 0.015 + (infectionLevel * 0.04);
     
-    if (infectionLevel > 0.7) {
+    if (infectionLevel > 0.7 && !state.photoSensitiveMode) {
         document.getElementById('main-panel').classList.add('glitch-active');
-        camera.position.x += (Math.random() - 0.5) * 0.12;
+        camera.position.x += (Math.random() - 0.5) * 0.05;
         applyScreenGlitch(infectionLevel);
     } else {
         document.getElementById('main-panel').classList.remove('glitch-active');
@@ -225,6 +225,7 @@ function checkCollisions() {
     state.collectibles.forEach((c, i) => {
         if (player.position.distanceTo(c.position) < 1.2 || (state.isForked && player2.position.distanceTo(c.position) < 1.2)) {
             state.bits++;
+            state.totalScore++;
             audioEngine.playCollect();
             updateStatsUI();
             scene.remove(c);
@@ -265,10 +266,11 @@ function terminateFork() {
 
 function updateStatsUI() {
     document.getElementById('bit-count').innerText = state.bits;
+    document.getElementById('bit-count').innerText = state.totalScore;
 
     // Si le score actuel dépasse le record, on met à jour l'affichage en temps réel
-    if (state.bits > state.highScore) {
-        state.highScore = state.bits;
+    if (state.totalScore > state.highScore) {
+        state.highScore = state.totalScore;
         document.getElementById('high-score').innerText = state.highScore;
         // Optionnel : ajouter une petite classe CSS pour faire briller le score
         document.getElementById('high-score').classList.add('new-record');
@@ -282,12 +284,29 @@ function jumpSector() {
     localStorage.setItem('tutorial_completed', 'true');
     state.bits = 0; 
     state.sector++;
+    state.speed += 0.05; 
     audioEngine.playSectorJump();
+
+    // 2. Changer le design du tunnel (Nombre de segments)
+    // Secteur 1: Octogone (8 faces), Secteur 2: Hexagone (6 faces), Secteur 3: Carré (4 faces)
+    const faces = Math.max(4, 8 - (state.sector % 5)); 
+    tunnel.geometry.dispose(); // Libère la mémoire
+    tunnel.geometry = new THREE.CylinderGeometry(10, 10, 5000, faces, 1, true);
+
     const p = sectorPalettes[state.sector % sectorPalettes.length];
     updateSectorUI(p);
     tunnel.material.color.setHex(p.tunnel);
     ambientLight.color.setHex(p.light);
     scene.fog.color.setHex(p.fog);
+
+    // Alterner le style du tunnel un secteur sur deux
+    /*if (state.sector % 2 === 0) {
+        tunnel.material.wireframe = true;
+    } else {
+        tunnel.material.wireframe = false;
+        tunnel.material.transparent = true;
+        tunnel.material.opacity = 0.8;
+    }*/
 }
 
 function updateSectorUI(p) {
@@ -307,6 +326,7 @@ function updateSectorUI(p) {
 function applyScreenGlitch(level) {
     const sliceDiv = document.getElementById('glitch-slice');
     document.body.classList.add('screen-corrupted');
+    sliceDiv.style.opacity= "0.3"
     sliceDiv.classList.add('active');
     if (Math.abs(level - lastGlitchLevel) > 0.05 || Math.random() < 0.03) {
         lastGlitchLevel = level;
@@ -322,13 +342,13 @@ function endGame(m) {
     localStorage.setItem('lebug_highscore', state.highScore);
 
     document.getElementById('notif-title').innerText = '>> ' + m;
-    document.getElementById('notif-sub').innerText = 'FINAL_SCORE: ' + state.bits + ' | REBOOTING...';
+    document.getElementById('notif-sub').innerText = 'FINAL_SCORE: ' + state.totalScore + ' | REBOOTING...';
     //document.getElementById('notif-sub').innerText = 'SYSTEM REBOOT IN 2s...';
 
     const notif = document.getElementById('sector-notif');
     notif.style.display = 'block';
     notif.classList.add('show');
-    setTimeout(() => location.reload(), 2500);
+    setTimeout(() => location.reload(), 3500);
 }
 
 // ============================================================

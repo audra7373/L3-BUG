@@ -14,6 +14,7 @@ export class GameState {
         this.speed = 0.2;
         this.bits = 0;
         this.sector = 1;
+        this.totalScore = 0;
         this.lanes = [-2.5, 0, 2.5];
         this.targetLane = 1;
         this.isFlipped = false;
@@ -26,5 +27,6 @@ export class GameState {
         this.gates = [];
         this.forks = [];
         this.highScore = localStorage.getItem('lebug_highscore') || 0;
+        this.photoSensitiveMode = false;
     }
 }
